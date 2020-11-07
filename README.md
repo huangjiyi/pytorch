@@ -1,2 +1,2 @@
 # pytorch
-pytorch for learning deep learning
+for learning deep learning
