@@ -2,11 +2,10 @@ import torch
 import torch.nn as nn
 
 """
-    ResNet:
-    ResNet根据输出map的尺寸，可以分为5大层，每一种resnet第一层都是相同的，
-    tips：当卷积层后面跟着BN层时,卷积层不需要bias
+    经典ResNet网络实现
 """
 
+""" tips：当卷积层后面跟着BN层时,卷积层不需要bias """
 
 def conv1x1(in_channels, out_channels, stride=1):
     """ 返回给定输入和输出通道的1x1卷积层 """
@@ -149,6 +148,9 @@ def resnet50(in_channels=3, classes_num=10, **kwargs):
     """ 实现经典ResNet-50网络 """
     return ResNet(Bottleneck, [3, 4, 6, 3], in_channels, classes_num, **kwargs)
 
+
+""" 官方实现和本人实现的ResNet网络在CIFAR10数据集上分类效果对比"""
+# 参数：learning_rate = 0.001，Adam优化算法（默认参数），交叉熵损失函数
 
 #  resnet_18 :
 #
