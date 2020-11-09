@@ -52,11 +52,35 @@ class Inception(nn.Module):
         return torch.cat(outputs, 1)
 
 
+class InceptionAux(nn.Module):
+    """ 实现GoogLeNet辅助分类器 """
+
+    def __init__(self, in_channels, classes_num):
+        super(InceptionAux, self).__init__()
+        self.avgpool = nn.AdaptiveAvgPool2d((4, 4))
+        self.conv = BasicConv2d(in_channels, 128, kernel_size=1)
+        self.fc = nn.Sequential(
+            nn.Linear(2048, 1024),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.7),
+            nn.Linear(1024, classes_num)
+        )
+
+    def forward(self, x):
+        x = self.conv(self.avgpool(x))
+        featrues = torch.flatten(x, 1)
+        output = self.fc(featrues)
+
+        return output
+
+
 class GoogLeNet(nn.Module):
     """ 经典GoogLeNet网络实现，输入图像尺寸：224*224 """
 
-    def __init__(self, in_channels, classes_num, init_weights=True):
+    def __init__(self, in_channels, classes_num, aux_logits=False, init_weights=True):
         super(GoogLeNet, self).__init__()
+
+        self.aux_logits = aux_logits
 
         self.conv1 = BasicConv2d(in_channels, 64, kernel_size=7, stride=2, padding=3)
         self.maxpool1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -81,6 +105,13 @@ class GoogLeNet(nn.Module):
         self.dropout = nn.Dropout(0.4)
         self.fc = nn.Linear(1024, classes_num)
 
+        if aux_logits:
+            self.aux1 = InceptionAux(512, classes_num)
+            self.aux2 = InceptionAux(528, classes_num)
+        else:
+            self.aux1 = None
+            self.aux2 = None
+
         if init_weights:
             self._initialize_weights()
 
@@ -91,20 +122,35 @@ class GoogLeNet(nn.Module):
         x = self.inception_3a(x)
         x = self.inception_3b(x)
         x = self.maxpool3(x)
-
         x = self.inception_4a(x)
+
+        # 辅助分类器1输出
+        if self.aux1 is not None and self.training:
+            aux1_out = self.aux1(x)
+        else:
+            aux1_out = None
+
         x = self.inception_4b(x)
         x = self.inception_4c(x)
         x = self.inception_4d(x)
+
+        # 辅助分类器2输出
+        if self.aux2 is not None and self.training:
+            aux2_out = self.aux2(x)
+        else:
+            aux2_out = None
+
         x = self.inception_4e(x)
         x = self.maxpool4(x)
-
         x = self.inception_5a(x)
         x = self.inception_5b(x)
         x = torch.flatten(self.avgpool(x), 1)
 
-        x = self.fc(self.dropout(x))
-        return x
+        out = self.fc(self.dropout(x))
+        if self.aux_logits and self.training:
+            return out, aux2_out, aux1_out
+        else:
+            return out
 
     def _initialize_weights(self):
         """ 权值初始化方法直接copy源码 """
@@ -120,6 +166,6 @@ class GoogLeNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
 
-def googlenet(in_channels=3, classes_num=10, **kwargs):
+def google_net(in_channels=3, classes_num=10, aux_logits=False, **kwargs):
     """  返回经典GoogLeNet网络模型 """
-    return GoogLeNet(in_channels, classes_num, **kwargs)
+    return GoogLeNet(in_channels, classes_num, aux_logits, **kwargs)
