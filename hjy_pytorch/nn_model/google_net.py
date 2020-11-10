@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as fun
-import scipy.stats as stats
 
 
 class BasicConv2d(nn.Module):
@@ -154,6 +153,7 @@ class GoogLeNet(nn.Module):
 
     def _initialize_weights(self):
         """ 权值初始化方法直接copy源码 """
+        import scipy.stats as stats
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
                 X = stats.truncnorm(-2, 2, scale=0.01)
