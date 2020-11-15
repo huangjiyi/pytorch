@@ -4,10 +4,12 @@ from .google_net import BasicConv2d
 
 
 def inception_v3(in_channels, classes_num, aux_logits=False, **kwargs):
-    return InceptionV3(in_channels, classes_num, aux_logits=False, **kwargs)
+    """ 返回inception-V3网络模型 """
+    return InceptionV3(in_channels, classes_num, aux_logits, **kwargs)
 
 
 class InceptionV3(nn.Module):
+    """ 实现Inception-V3网络 """
 
     def __init__(self, in_channels, classes_num, aux_logits=False, init_weights=True):
         super(InceptionV3, self).__init__()
@@ -30,6 +32,11 @@ class InceptionV3(nn.Module):
         self.inception_c2 = InceptionC(768, 160)
         self.inception_c3 = InceptionC(768, 160)
         self.inception_c4 = InceptionC(768, 192)
+        if aux_logits:
+            self.aux = InceptionAux(768, classes_num)
+        else:
+            self.aux = None
+
         self.inception_d = InceptionD(768)
         self.inception_e1 = InceptionE(1280)
         self.inception_e2 = InceptionE(2048)
@@ -58,13 +65,22 @@ class InceptionV3(nn.Module):
         x = self.inception_a3(self.inception_a2(self.inception_a1(x)))
         x = self.inception_b(x)
         x = self.inception_c4(self.inception_c3(self.inception_c2(self.inception_c1(x))))
+
+        if self.aux is not None and self.training:
+            aux_out = self.aux(x)
+        else:
+            aux_out = None
+
         x = self.inception_d(x)
         x = self.inception_e2(self.inception_e1(x))
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        x = self.fc(self.dropout(x))
+        out = self.fc(self.dropout(x))
 
-        return x
+        if self.aux_logits and self.training:
+            return out, aux_out
+        else:
+            return out
 
 
 class InceptionA(nn.Module):
@@ -236,6 +252,7 @@ class InceptionAux(nn.Module):
         self.avgpool1 = nn.AvgPool2d(kernel_size=5, stride=3)
         self.conv1 = BasicConv2d(in_channels, out_channels=128, kernel_size=1)
         self.conv2 = BasicConv2d(128, 768, kernel_size=5)
+        self.conv2_t = BasicConv2d(128, 768, kernel_size=1)
         self.conv2.stddev = 0.01
         self.avgpool2 = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(768, classes_num)
@@ -243,7 +260,11 @@ class InceptionAux(nn.Module):
 
     def forward(self, x):
         x = self.avgpool1(x)
-        x = self.conv2(self.conv1(x))
+        x = self.conv1(x)
+        if x.shape[2] >=5 and x.shape[3] >=5:
+            x = self.conv2(x)
+        else:
+            x = self.conv2_t(x)
         x = self.avgpool2(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
