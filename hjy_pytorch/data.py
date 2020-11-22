@@ -8,44 +8,35 @@ import sys
 sys.path.append("..")
 
 
-def load_data_fashion_mnist(batch_size, resize=None, root='../data/FashionMNIST'):
-    """获取fashion mnist数据集的小批量训练/测试样本生成器"""
-    trans = []
-    if resize:
-        trans.append(transforms.Resize(size=resize))
-    trans.append(transforms.ToTensor())
-    transform = transforms.Compose(trans)
-
-    mnist_train = torchvision.datasets.FashionMNIST(root=root, train=True, download=True,
-                                                    transform=transform)
-    mnist_test = torchvision.datasets.FashionMNIST(root=root, train=False, download=True,
-                                                   transform=transform)
-
-    if sys.platform.startswith('win'):
-        num_workers = 0  # 0表示不用额外的进程来加速读取数据，windows上不能用
-    else:
-        num_workers = 4
-
-    train_iter = data.DataLoader(mnist_train, batch_size=batch_size,
-                                 shuffle=True, num_workers=num_workers)
-    test_iter = data.DataLoader(mnist_test, batch_size=batch_size,
-                                shuffle=False, num_workers=num_workers)
-
-    return train_iter, test_iter
+def load_data_fashion_mnist(batch_size, resize=None, root='data//FashionMNIST'):
+    """获取fashion mnist数据集"""
+    fashist_mnist = torchvision.datasets.FashionMNIST
+    return load_data(fashist_mnist, batch_size, root, resize)
 
 
-def load_data_CIFAR10(batch_size, resize=None, root='../data//CIFAR10'):
+def load_data_CIFAR10(batch_size, resize=None, root='data//CIFAR10'):
     """获取FashionMNIST数据集"""
+    CIFAR10 = torchvision.datasets.CIFAR10
+    return load_data(CIFAR10, batch_size, root, resize)
+
+
+def load_data_CUB200(batch_size, resize=(224, 224), root="data//CUB_200_2011"):
+    """获取CUB-200-2011数据集"""
+    return load_data(CUB200, batch_size, root, resize)
+
+
+def load_data(dataset, batch_size, root, resize=False):
+    " 获取给定数据集的小批量训练/测试样本生成器 "
     trans = []
     if resize:
         trans.append(transforms.Resize(size=resize))
     trans.append(transforms.ToTensor())
     transform = transforms.Compose(trans)
 
-    train_data = torchvision.datasets.CIFAR10(root=root, train=True, download=True,
-                                              transform=transform)
-    test_data = torchvision.datasets.CIFAR10(root=root, train=False, download=True,
-                                             transform=transform)
+    train_data = dataset(root=root, train=True, download=True,
+                         transform=transform)
+    test_data = dataset(root=root, train=False, download=True,
+                        transform=transform)
 
     if sys.platform.startswith('win'):
         num_workers = 0
@@ -63,15 +54,20 @@ def load_data_CIFAR10(batch_size, resize=None, root='../data//CIFAR10'):
 class CUB200(data.Dataset):
     """ Caltech-UCSD Birds-200-2011数据集 """
 
-    def __init__(self, root, train=True, transform=None):
+    def __init__(self, root, train=True, download=False, transform=None):
+        " download参数没有用，主要是为和其他官方给出的数据集统一用法 "
         super(CUB200, self).__init__()
         self.root = root
         self.train = train
         self.transform_ = transform
-        self.classes_file = os.path.join(root, 'classes.txt')  # <class_id> <class_name>
-        self.image_class_labels_file = os.path.join(root, 'image_class_labels.txt')  # <image_id> <class_id>
-        self.images_file = os.path.join(root, 'images.txt')  # <image_id> <image_name>
-        self.train_test_split_file = os.path.join(root, 'train_test_split.txt')  # <image_id> <is_training_image>
+        self.classes_file = os.path.join(
+            root, 'classes.txt')  # <class_id> <class_name>
+        self.image_class_labels_file = os.path.join(
+            root, 'image_class_labels.txt')  # <image_id> <class_id>
+        self.images_file = os.path.join(
+            root, 'images.txt')  # <image_id> <image_name>
+        self.train_test_split_file = os.path.join(
+            root, 'train_test_split.txt')  # <image_id> <is_training_image>
 
         self._train_ids = []
         self._test_ids = []
@@ -127,3 +123,14 @@ class CUB200(data.Dataset):
             return len(self._train_ids)
         else:
             return len(self._test_ids)
+
+
+if __name__ == '__main__':
+    batch_size = 128
+    resize = (128, 128)
+    train_iter, test_iter = load_data_CUB200(batch_size, resize)
+    for X, y in train_iter:
+        print(X.shape)
+        print(y.shape)
+        break
+    print()
