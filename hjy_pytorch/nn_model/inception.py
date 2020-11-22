@@ -51,7 +51,8 @@ class InceptionV3(nn.Module):
                     import scipy.stats as stats
                     stddev = m.stddev if hasattr(m, 'stddev') else 0.1
                     X = stats.truncnorm(-2, 2, scale=stddev)
-                    values = torch.as_tensor(X.rvs(m.weight.numel()), dtype=m.weight.dtype)
+                    values = torch.as_tensor(
+                        X.rvs(m.weight.numel()), dtype=m.weight.dtype)
                     values = values.view(m.weight.size())
                     with torch.no_grad():
                         m.weight.copy_(values)
@@ -64,7 +65,8 @@ class InceptionV3(nn.Module):
         x = self.maxpool2(self.conv5(self.conv4(x)))
         x = self.inception_a3(self.inception_a2(self.inception_a1(x)))
         x = self.inception_b(x)
-        x = self.inception_c4(self.inception_c3(self.inception_c2(self.inception_c1(x))))
+        x = self.inception_c4(self.inception_c3(
+            self.inception_c2(self.inception_c1(x))))
 
         if self.aux is not None and self.training:
             aux_out = self.aux(x)
@@ -88,17 +90,21 @@ class InceptionA(nn.Module):
     def __init__(self, in_channels, pool_ch):
         super(InceptionA, self).__init__()
 
-        self.branch1x1 = BasicConv2d(in_channels, out_channels=64, kernel_size=1)
+        self.branch1x1 = BasicConv2d(
+            in_channels, out_channels=64, kernel_size=1)
 
         self.branch5x5 = nn.Sequential(
             BasicConv2d(in_channels, out_channels=48, kernel_size=1),
-            BasicConv2d(in_channels=48, out_channels=64, kernel_size=5, padding=2)
+            BasicConv2d(in_channels=48, out_channels=64,
+                        kernel_size=5, padding=2)
         )
 
         self.branch3x3x2 = nn.Sequential(
             BasicConv2d(in_channels, out_channels=64, kernel_size=1),
-            BasicConv2d(in_channels=64, out_channels=96, kernel_size=3, padding=1),
-            BasicConv2d(in_channels=96, out_channels=96, kernel_size=3, padding=1)
+            BasicConv2d(in_channels=64, out_channels=96,
+                        kernel_size=3, padding=1),
+            BasicConv2d(in_channels=96, out_channels=96,
+                        kernel_size=3, padding=1)
         )
 
         self.branch_pool = nn.Sequential(
@@ -121,11 +127,14 @@ class InceptionB(nn.Module):
     def __init__(self, in_channels):
         super(InceptionB, self).__init__()
 
-        self.branch3x3 = BasicConv2d(in_channels, out_channels=384, kernel_size=3, stride=2)
+        self.branch3x3 = BasicConv2d(
+            in_channels, out_channels=384, kernel_size=3, stride=2)
         self.branch3x3x2 = nn.Sequential(
             BasicConv2d(in_channels, out_channels=64, kernel_size=1),
-            BasicConv2d(in_channels=64, out_channels=96, kernel_size=3, padding=1),
-            BasicConv2d(in_channels=96, out_channels=96, kernel_size=3, stride=2)
+            BasicConv2d(in_channels=64, out_channels=96,
+                        kernel_size=3, padding=1),
+            BasicConv2d(in_channels=96, out_channels=96,
+                        kernel_size=3, stride=2)
         )
 
         self.branch_pool = nn.MaxPool2d(kernel_size=3, stride=2)
@@ -144,20 +153,27 @@ class InceptionC(nn.Module):
     def __init__(self, in_channels, ch_7x7):
         super(InceptionC, self).__init__()
 
-        self.branch1x1 = BasicConv2d(in_channels, out_channels=192, kernel_size=1)
+        self.branch1x1 = BasicConv2d(
+            in_channels, out_channels=192, kernel_size=1)
 
         self.branch7x7 = nn.Sequential(
             BasicConv2d(in_channels, out_channels=ch_7x7, kernel_size=1),
-            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7, kernel_size=(1, 7), padding=(0, 3)),
-            BasicConv2d(in_channels=ch_7x7, out_channels=192, kernel_size=(7, 1), padding=(3, 0))
+            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7,
+                        kernel_size=(1, 7), padding=(0, 3)),
+            BasicConv2d(in_channels=ch_7x7, out_channels=192,
+                        kernel_size=(7, 1), padding=(3, 0))
         )
 
         self.branch7x7x2 = nn.Sequential(
             BasicConv2d(in_channels, out_channels=ch_7x7, kernel_size=1),
-            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7, kernel_size=(7, 1), padding=(3, 0)),
-            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7, kernel_size=(1, 7), padding=(0, 3)),
-            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7, kernel_size=(7, 1), padding=(3, 0)),
-            BasicConv2d(in_channels=ch_7x7, out_channels=192, kernel_size=(1, 7), padding=(0, 3)),
+            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7,
+                        kernel_size=(7, 1), padding=(3, 0)),
+            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7,
+                        kernel_size=(1, 7), padding=(0, 3)),
+            BasicConv2d(in_channels=ch_7x7, out_channels=ch_7x7,
+                        kernel_size=(7, 1), padding=(3, 0)),
+            BasicConv2d(in_channels=ch_7x7, out_channels=192,
+                        kernel_size=(1, 7), padding=(0, 3)),
         )
 
         self.branch_pool = nn.Sequential(
@@ -182,14 +198,18 @@ class InceptionD(nn.Module):
 
         self.branch3x3 = nn.Sequential(
             BasicConv2d(in_channels, out_channels=192, kernel_size=1),
-            BasicConv2d(in_channels=192, out_channels=320, kernel_size=3, stride=2)
+            BasicConv2d(in_channels=192, out_channels=320,
+                        kernel_size=3, stride=2)
         )
 
         self.branch7x7 = nn.Sequential(
             BasicConv2d(in_channels, out_channels=192, kernel_size=1),
-            BasicConv2d(in_channels=192, out_channels=192, kernel_size=(1, 7), padding=(0, 3)),
-            BasicConv2d(in_channels=192, out_channels=192, kernel_size=(7, 1), padding=(3, 0)),
-            BasicConv2d(in_channels=192, out_channels=192, kernel_size=3, stride=2)
+            BasicConv2d(in_channels=192, out_channels=192,
+                        kernel_size=(1, 7), padding=(0, 3)),
+            BasicConv2d(in_channels=192, out_channels=192,
+                        kernel_size=(7, 1), padding=(3, 0)),
+            BasicConv2d(in_channels=192, out_channels=192,
+                        kernel_size=3, stride=2)
         )
 
         self.branch_pool = nn.MaxPool2d(kernel_size=3, stride=2)
@@ -211,13 +231,17 @@ class InceptionE(nn.Module):
         self.branch1x1 = BasicConv2d(in_channels, 320, kernel_size=1)
 
         self.branch3x3_1 = BasicConv2d(in_channels, 384, kernel_size=1)
-        self.branch3x3_2_1 = BasicConv2d(384, 384, kernel_size=(1, 3), padding=(0, 1))
-        self.branch3x3_2_2 = BasicConv2d(384, 384, kernel_size=(3, 1), padding=(1, 0))
+        self.branch3x3_2_1 = BasicConv2d(
+            384, 384, kernel_size=(1, 3), padding=(0, 1))
+        self.branch3x3_2_2 = BasicConv2d(
+            384, 384, kernel_size=(3, 1), padding=(1, 0))
 
         self.branch3x3db_1 = BasicConv2d(in_channels, 448, kernel_size=1)
         self.branch3x3db_2 = BasicConv2d(448, 384, kernel_size=3, padding=1)
-        self.branch3x3db_2_3_1 = BasicConv2d(384, 384, kernel_size=(1, 3), padding=(0, 1))
-        self.branch3x3db_2_3_2 = BasicConv2d(384, 384, kernel_size=(3, 1), padding=(1, 0))
+        self.branch3x3db_2_3_1 = BasicConv2d(
+            384, 384, kernel_size=(1, 3), padding=(0, 1))
+        self.branch3x3db_2_3_2 = BasicConv2d(
+            384, 384, kernel_size=(3, 1), padding=(1, 0))
 
         self.branch_pool = nn.Sequential(
             nn.AvgPool2d(kernel_size=3, stride=1, padding=1),
@@ -261,7 +285,7 @@ class InceptionAux(nn.Module):
     def forward(self, x):
         x = self.avgpool1(x)
         x = self.conv1(x)
-        if x.shape[2] >=5 and x.shape[3] >=5:
+        if x.shape[2] >= 5 and x.shape[3] >= 5:
             x = self.conv2(x)
         else:
             x = self.conv2_t(x)
